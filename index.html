@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Prompt&amp;Chill</title>
+<style>
+  /* ---------- Couleurs (clair par défaut, sombre automatique) ---------- */
+  :root {
+    --bg: #F2F0F9;
+    --surface: #FFFFFF;
+    --ink: #221E3B;
+    --muted: #655F82;
+    --line: #DDD8EE;
+    --accent: #5A49D6;
+    --accent-ink: #FFFFFF;
+    --teal: #138A72;
+    --track: #E4E0F3;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15122A;
+      --surface: #1E1A38;
+      --ink: #ECE9FB;
+      --muted: #A8A2CB;
+      --line: #332E57;
+      --accent: #9C8FFF;
+      --accent-ink: #15122A;
+      --teal: #55D6BA;
+      --track: #2C2750;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15122A;
+    --surface: #1E1A38;
+    --ink: #ECE9FB;
+    --muted: #A8A2CB;
+    --line: #332E57;
+    --accent: #9C8FFF;
+    --accent-ink: #15122A;
+    --teal: #55D6BA;
+    --track: #2C2750;
+    color-scheme: dark;
+  }
+
+  /* ---------- Base ---------- */
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 28px 20px 56px; }
+  h1, h2, h3 {
+    margin: 0;
+    line-height: 1.2;
+    font-family: ui-rounded, "SF Pro Rounded", "Avenir Next Rounded", "Nunito", "Trebuchet MS", system-ui, sans-serif;
+  }
+  h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: 1.4rem; font-weight: 750; }
+  h3 { font-size: 1.05rem; font-weight: 700; margin-top: 26px; }
+  p { margin: 8px 0; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .sous-titre { color: var(--muted); margin: 6px 0 24px; }
+  section { margin-top: 48px; }
+
+  /* ---------- Accueil en forme de conversation ---------- */
+  .fil { display: flex; flex-direction: column; gap: 10px; }
+  .bulle { max-width: 88%; padding: 12px 16px; border-radius: 20px; }
+  .bulle.moi {
+    align-self: flex-end;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-bottom-right-radius: 6px;
+  }
+  .bulle.ia {
+    align-self: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-bottom-left-radius: 6px;
+  }
+  .points { display: inline-flex; gap: 5px; padding: 6px 0; }
+  .points span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted);
+    animation: pulse 1s infinite ease-in-out;
+  }
+  .points span:nth-child(2) { animation-delay: .15s; }
+  .points span:nth-child(3) { animation-delay: .3s; }
+  @keyframes pulse { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+  /* ---------- Compétences ---------- */
+  .legende { color: var(--muted); font-size: .9rem; margin: 6px 0 0; }
+  .competences { list-style: none; margin: 0; padding: 0; }
+  .competences li { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .ligne { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .nom { font-weight: 650; }
+  .score { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .palier { color: var(--muted); font-size: .9rem; margin-left: 6px; }
+  .piste {
+    position: relative;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--track);
+    margin: 10px 0 8px;
+  }
+  .rempli {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+    width: 0;
+    transition: width .8s ease;
+  }
+  .cible {
+    position: absolute;
+    top: -4px;
+    width: 3px;
+    height: 18px;
+    border-radius: 2px;
+    background: var(--teal);
+    transform: translateX(-1.5px);
+  }
+  .avis { margin: 0; color: var(--muted); font-size: .93rem; }
+
+  /* ---------- Verdict du prof ---------- */
+  .note {
+    border-left: 4px solid var(--accent);
+    padding: 2px 0 2px 16px;
+    margin-top: 18px;
+  }
+  .note h3 { margin-top: 0; }
+
+  /* ---------- Étapes ---------- */
+  .etapes { list-style: none; margin: 14px 0 0; padding: 0; }
+  .etapes li { padding: 8px 0; }
+  .etapes label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+  .etapes input { width: 22px; height: 22px; margin: 1px 0 0; flex: none; accent-color: var(--accent); }
+  .etapes input:checked + span { color: var(--muted); text-decoration: line-through; }
+
+  /* ---------- Journal ---------- */
+  .ajout { margin-top: 14px; }
+  .ajout label { display: block; font-weight: 650; margin-bottom: 6px; }
+  textarea {
+    width: 100%;
+    min-height: 88px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 16px;
+    resize: vertical;
+  }
+  button {
+    margin-top: 10px;
+    min-height: 44px;
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .statut { min-height: 1.5em; color: var(--muted); font-size: .93rem; }
+  .journal { list-style: none; margin: 18px 0 0; padding: 0; }
+  .journal li {
+    position: relative;
+    margin-left: 6px;
+    padding: 0 0 20px 20px;
+    border-left: 2px solid var(--line);
+  }
+  .journal li::before {
+    content: "";
+    position: absolute;
+    left: -7px; top: 5px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .journal time { font-weight: 700; }
+  .journal p { margin: 4px 0 0; }
+
+  .pied { margin-top: 48px; color: var(--muted); font-size: .88rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rempli { transition: none; }
+    .points span { animation: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <header>
+    <h1>Prompt&amp;Chill</h1>
+    <p class="sous-titre">Mon carnet pour apprendre à construire avec l’IA.</p>
+    <div class="fil">
+      <div class="bulle moi">Où en suis-je dans l’IA&nbsp;?</div>
+      <div class="bulle ia" id="reponse" aria-live="polite">
+        <span class="points" aria-label="Réponse en cours"><span></span><span></span><span></span></span>
+      </div>
+    </div>
+  </header>
+
+  <section aria-labelledby="t-competences">
+    <h2 id="t-competences">Mes compétences</h2>
+    <p class="legende">Le trait vert marque l’objectif à atteindre.</p>
+    <h3>Ce qui est solide</h3>
+    <ul class="competences" id="solides"></ul>
+    <h3>Ce qui reste à construire</h3>
+    <ul class="competences" id="a-construire"></ul>
+  </section>
+
+  <section aria-labelledby="t-verdict">
+    <h2 id="t-verdict">Le verdict du prof</h2>
+    <p class="legende">Évaluation franche de Claude, d’après ce que j’ai construit avec lui ces deux semaines.</p>
+
+    <div class="note">
+      <h3>Ce qui est solide</h3>
+      <p>Tu sais exactement ce que tu veux. Tes demandes contiennent des règles, des exceptions et des cas limites, et c’est ce qui sépare un résultat moyen d’un résultat utile.</p>
+      <p>Tu penses au coût avant de construire&nbsp;: éviter les doublons, choisir un modèle léger, ne pas relancer l’IA pour rien. Beaucoup de débutants découvrent ça après leur première facture.</p>
+      <p>Tu as aussi le bon réflexe sur les données&nbsp;: tu as retiré un canal externe parce que des textes de clients en sortaient.</p>
+    </div>
+
+    <div class="note">
+      <h3>Ce qui doit progresser</h3>
+      <p>Tu changes souvent d’outil et de direction. En deux semaines, des flux ont été montés, abandonnés puis repris ailleurs. Chaque virage coûte du temps et de l’usage.</p>
+      <p>Tu pilotes l’IA sans encore lire ce qu’elle écrit. Tant que le code reste opaque, chaque correction passe par Claude, ce qui pèse aussi sur ta limite hebdomadaire.</p>
+      <p>Tu découvres les erreurs en utilisant l’outil&nbsp;: un tri qui regroupe des tickets sans rapport, tu le vois après coup. Il faut des cas de test écrits avant.</p>
+      <p>Tu ajoutes beaucoup de fonctions à des outils déjà chargés. Un outil qui grossit trop vite devient fragile.</p>
+    </div>
+
+    <div class="note">
+      <h3>Mon conseil</h3>
+      <p>Avant chaque projet, écris en cinq lignes le but, les entrées, les sorties et l’outil choisi. Fais-le ensuite tourner sur dix exemples dont tu connais la bonne réponse avant de lui faire confiance.</p>
+      <p>Ce site est l’endroit idéal pour travailler ce qui te manque&nbsp;: lire du code, publier, appeler une API.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-etapes">
+    <h2 id="t-etapes">Prochaines étapes</h2>
+    <ul class="etapes" id="etapes"></ul>
+  </section>
+
+  <section aria-labelledby="t-journal">
+    <h2 id="t-journal">Journal</h2>
+    <div class="ajout">
+      <label for="texte">Ce que j’ai appris aujourd’hui</label>
+      <textarea id="texte"></textarea>
+      <button type="button" id="ajouter">Ajouter l’entrée</button>
+      <p class="statut" id="statut" role="status"></p>
+    </div>
+    <ul class="journal" id="journal"></ul>
+  </section>
+
+  <p class="pied">Les niveaux, le verdict et les étapes sont écrits dans le code de la page&nbsp;: demande à Claude de les mettre à jour. Le journal et les cases cochées sont enregistrés uniquement dans ce navigateur.</p>
+
+</main>
+
+<script>
+  /* =====================================================
+     1. LES DONNÉES (c’est ici que tu modifies le contenu)
+     ===================================================== */
+
+  // niveau = où tu en es (0 à 100), cible = où tu veux arriver
+  const COMPETENCES = [
+    { nom: "Formuler un besoin",           niveau: 78, cible: 90, avis: "Tes demandes sont précises&nbsp;: règles, exceptions, cas limites. C’est ta meilleure compétence." },
+    { nom: "Maîtriser les coûts",          niveau: 70, cible: 85, avis: "Tu penses tokens, doublons et modèle léger dès le départ." },
+    { nom: "Automatiser un flux",          niveau: 65, cible: 85, avis: "Tu sais découper un flux (déclencheur, tri, action), mais tu as changé d’outil plusieurs fois." },
+    { nom: "Concevoir un outil",           niveau: 60, cible: 80, avis: "Tu sais ce qu’un écran doit montrer. Stabilise avant d’ajouter de nouvelles fonctions." },
+    { nom: "Protéger les données",         niveau: 60, cible: 80, avis: "Bon réflexe&nbsp;: tu as coupé un canal externe pour garder les textes clients chez toi." },
+    { nom: "Vérifier les sorties de l’IA", niveau: 45, cible: 75, avis: "Tu repères les erreurs en utilisant l’outil, pas encore avec des tests écrits à l’avance." },
+    { nom: "Comprendre les API",           niveau: 30, cible: 70, avis: "Tu utilises des API via des outils, sans encore voir ce qui circule entre eux." },
+    { nom: "Lire et modifier du code",     niveau: 15, cible: 60, avis: "Tu pilotes sans lire le code&nbsp;: tu dépends de l’IA pour chaque correction." },
+    { nom: "Publier un site",              niveau: 10, cible: 70, avis: "Pas encore pratiqué&nbsp;: c’est l’objectif de ce projet." }
+  ];
+
+  const ETAPES = [
+    "Lire ce site ligne par ligne et changer une couleur moi-même",
+    "Publier le site sur GitHub Pages",
+    "Afficher les données d’une API publique sur la page",
+    "Écrire dix cas de test avant d’automatiser un nouveau flux",
+    "Écrire le but, les entrées, les sorties et l’outil avant chaque nouveau projet"
+  ];
+
+  // Les cinq lignes de départ du journal (on met midi pour éviter les décalages d’heure)
+  const JOURNAL_DEPART = [
+    { date: "2026-10-02T12:00:00", texte: "Premier scénario d’automatisation&nbsp;: trier des tickets de support avec l’API de Claude. Leçon&nbsp;: éviter de traiter deux fois le même ticket." },
+    { date: "2026-10-08T12:00:00", texte: "Vérification automatique des certificats SSL et des zones DNS, en dépensant le moins de crédits possible." },
+    { date: "2026-10-09T12:00:00", texte: "Un formulaire pour rédiger des notes de sécurité sans retaper le même modèle à chaque fois." },
+    { date: "2026-10-11T12:00:00", texte: "Premier tableau de bord&nbsp;: des tickets classés par catégorie, avec le détail au clic." },
+    { date: "2026-10-17T12:00:00", texte: "Tableau de bord de garde en direct&nbsp;: tri automatique, détection des doublons, traduction. Leçon&nbsp;: l’IA extrait les informations, une règle fixe décide du niveau." },
+    { date: "2026-10-18T12:00:00", texte: "Début de Prompt&Chill. Objectif&nbsp;: comprendre les API et créer un site, depuis mon téléphone et avec un budget de 0&nbsp;€." }
+  ];
+
+  /* =====================================================
+     2. LES OUTILS (petites fonctions réutilisables)
+     ===================================================== */
+
+  // Transforme le code HTML des textes ci-dessus (&nbsp;) en vrai texte
+  function propre(texte) {
+    const t = document.createElement("textarea");
+    t.innerHTML = texte;
+    return t.value;
+  }
+
+  // Donne un mot selon le niveau
+  function palier(n) {
+    if (n < 25) return "Débutant";
+    if (n < 50) return "Apprenti";
+    if (n < 75) return "Solide";
+    return "Avancé";
+  }
+
+  // Lire / écrire dans le navigateur (peut échouer, d’où le try/catch)
+  function lire(cle, defaut) {
+    try {
+      const v = localStorage.getItem(cle);
+      return v ? JSON.parse(v) : defaut;
+    } catch (e) {
+      return defaut;
+    }
+  }
+  function ecrire(cle, valeur) {
+    try {
+      localStorage.setItem(cle, JSON.stringify(valeur));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /* =====================================================
+     3. L’AFFICHAGE
+     ===================================================== */
+
+  // --- Accueil : la réponse apparaît après trois petits points ---
+  const moyenne = Math.round(COMPETENCES.reduce((s, c) => s + c.niveau, 0) / COMPETENCES.length);
+  const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reponse = document.getElementById("reponse");
+  setTimeout(function () {
+    reponse.textContent = "Mon niveau global est de " + moyenne + " sur 100 (" + palier(moyenne).toLowerCase() +
+      "). Solide pour concevoir et automatiser, encore fragile pour le code et la publication.";
+  }, reduit ? 0 : 1000);
+
+  // --- Compétences ---
+  function creerCompetence(c) {
+    const li = document.createElement("li");
+
+    const ligne = document.createElement("div");
+    ligne.className = "ligne";
+    const nom = document.createElement("span");
+    nom.className = "nom";
+    nom.textContent = c.nom;
+    const score = document.createElement("span");
+    score.className = "score";
+    score.innerHTML = "<b>" + c.niveau + "</b>/100";
+    const mot = document.createElement("span");
+    mot.className = "palier";
+    mot.textContent = palier(c.niveau);
+    score.appendChild(mot);
+    ligne.append(nom, score);
+
+    const piste = document.createElement("div");
+    piste.className = "piste";
+    piste.setAttribute("role", "progressbar");
+    piste.setAttribute("aria-label", c.nom);
+    piste.setAttribute("aria-valuemin", "0");
+    piste.setAttribute("aria-valuemax", "100");
+    piste.setAttribute("aria-valuenow", String(c.niveau));
+    const rempli = document.createElement("div");
+    rempli.className = "rempli";
+    const cible = document.createElement("span");
+    cible.className = "cible";
+    cible.style.left = c.cible + "%";
+    cible.title = "Objectif : " + c.cible;
+    piste.append(rempli, cible);
+
+    const avis = document.createElement("p");
+    avis.className = "avis";
+    avis.textContent = propre(c.avis);
+
+    li.append(ligne, piste, avis);
+    // On remplit la barre un instant après l’affichage pour que l’animation se voie
+    setTimeout(function () { rempli.style.width = c.niveau + "%"; }, 60);
+    return li;
+  }
+
+  const triees = COMPETENCES.slice().sort((a, b) => b.niveau - a.niveau);
+  triees.filter(c => c.niveau >= 55).forEach(c => document.getElementById("solides").appendChild(creerCompetence(c)));
+  triees.filter(c => c.niveau < 55).forEach(c => document.getElementById("a-construire").appendChild(creerCompetence(c)));
+
+  // --- Étapes (cases cochées gardées dans le navigateur) ---
+  const coches = lire("pc-etapes", []);
+  const listeEtapes = document.getElementById("etapes");
+  ETAPES.forEach(function (texte, i) {
+    const li = document.createElement("li");
+    const label = document.createElement("label");
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = !!coches[i];
+    box.addEventListener("change", function () {
+      coches[i] = box.checked;
+      ecrire("pc-etapes", coches);
+    });
+    const span = document.createElement("span");
+    span.textContent = texte;
+    label.append(box, span);
+    li.appendChild(label);
+    listeEtapes.appendChild(li);
+  });
+
+  // --- Journal ---
+  const listeJournal = document.getElementById("journal");
+  const statut = document.getElementById("statut");
+
+  function afficherJournal() {
+    const toutes = JOURNAL_DEPART.concat(lire("pc-journal", []));
+    toutes.sort((a, b) => new Date(b.date) - new Date(a.date));
+    listeJournal.textContent = "";
+    toutes.forEach(function (e) {
+      const li = document.createElement("li");
+      const jour = document.createElement("time");
+      jour.dateTime = e.date;
+      jour.textContent = new Date(e.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+      const p = document.createElement("p");
+      p.textContent = propre(e.texte);
+      li.append(jour, p);
+      listeJournal.appendChild(li);
+    });
+  }
+
+  document.getElementById("ajouter").addEventListener("click", function () {
+    const champ = document.getElementById("texte");
+    const texte = champ.value.trim();
+    if (!texte) {
+      statut.textContent = "Écris au moins quelques mots avant d’ajouter l’entrée.";
+      return;
+    }
+    const sauvees = lire("pc-journal", []);
+    sauvees.push({ date: new Date().toISOString(), texte: texte });
+    const ok = ecrire("pc-journal", sauvees);
+    champ.value = "";
+    statut.textContent = ok
+      ? "Entrée ajoutée."
+      : "Entrée ajoutée, mais ton navigateur ne peut pas l’enregistrer : elle disparaîtra à la fermeture de la page.";
+    if (!ok) { JOURNAL_DEPART.push({ date: new Date().toISOString(), texte: texte }); }
+    afficherJournal();
+  });
+
+  afficherJournal();
+</script>
+</body>
+</html>
