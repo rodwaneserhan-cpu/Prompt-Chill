@@ -463,6 +463,21 @@
   });
 
   afficherJournal();
+  async function afficherDerniereMaj() {
+  const zone = document.getElementById("derniere-maj");
+  try {
+    const url = "https://api.github.com/repos/rodwaneserhan-cpu/Prompt-Chill/commits?per_page=1";
+    const reponse = await fetch(url);
+    if (!reponse.ok) { throw new Error("code " + reponse.status); }
+    const donnees = await reponse.json();
+    const date = new Date(donnees[0].commit.author.date);
+    zone.textContent = "Dernière modification : " + date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  } catch (erreur) {
+    zone.textContent = "Lecture de GitHub impossible pour le moment (" + erreur.message + ").";
+  }
+}
+afficherDerniereMaj();
+
 </script>
 </body>
 </html>
